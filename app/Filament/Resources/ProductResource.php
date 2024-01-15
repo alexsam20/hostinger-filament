@@ -12,6 +12,7 @@ use Filament\Resources\Resource;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
 
@@ -26,6 +27,28 @@ class ProductResource extends Resource
     protected static ?string $navigationGroup = 'Shop';
 
     protected static ?int $navigationSort = 0;
+
+    protected static ?string $recordTitleAttribute = 'name';
+
+    protected static int $globalSearchResultsLimit = 20;
+
+    public static function getGloballySearchableAttributes(): array
+    {
+        return ['name', 'slug', 'description'];
+    }
+
+    public static function getGlobalSearchResultDetails(Model $record): array
+    {
+        return [
+            'Brand' => $record->brand->name,
+            //'Description' => $record->description,
+        ];
+    }
+
+    public static function getGlobalSearchEloquentQuery(): Builder
+    {
+        return parent::getGlobalSearchEloquentQuery()->with(['brand']);
+    }
 
     public static function form(Form $form): Form
     {
@@ -76,7 +99,7 @@ class ProductResource extends Resource
 
                                 Forms\Components\Select::make('type')
                                     ->options([
-                                        'downloadable' => ProductTypeEnum::DOWNLOADABLE->value,
+                                        'dow nloadable' => ProductTypeEnum::DOWNLOADABLE->value,
                                         'deliverable' => ProductTypeEnum::DELIVERABLE->value,
                                     ])->required()
                                     ->native(false),

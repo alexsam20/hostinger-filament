@@ -30,6 +30,7 @@ class AdminPanelProvider extends PanelProvider
             ->colors([
                 'primary' => 'rgb(103, 76, 196)',
             ])
+            ->globalSearchKeyBindings(['command+k', 'ctrl+k'])
             ->font('Poppins')
             ->favicon('images/favicon.ico')
             ->discoverResources(in: app_path('Filament/Resources'), for: 'App\\Filament\\Resources')
