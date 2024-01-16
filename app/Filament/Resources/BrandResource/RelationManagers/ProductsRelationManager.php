@@ -1,70 +1,29 @@
 <?php
 
-namespace App\Filament\Resources;
+namespace App\Filament\Resources\BrandResource\RelationManagers;
 
 use App\Enums\ProductTypeEnum;
-use App\Filament\Resources\ProductResource\Pages;
-use App\Filament\Resources\ProductResource\RelationManagers;
 use App\Models\Product;
 use Filament\Forms;
 use Filament\Forms\Form;
-use Filament\Resources\Resource;
+use Filament\Resources\RelationManagers\RelationManager;
 use Filament\Tables;
 use Filament\Tables\Table;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\SoftDeletingScope;
 use Illuminate\Support\Str;
 
-class ProductResource extends Resource
+class ProductsRelationManager extends RelationManager
 {
-    protected static ?string $model = Product::class;
+    protected static string $relationship = 'products';
 
-    protected static ?string $navigationIcon = 'heroicon-o-bolt';
-
-    protected static ?string $navigationLabel = 'Products';
-
-    protected static ?string $navigationGroup = 'Shop';
-
-    protected static ?int $navigationSort = 0;
-
-    protected static ?string $recordTitleAttribute = 'name';
-
-    protected static int $globalSearchResultsLimit = 20;
-
-//    protected static ?string $activeNavigationIcon = 'heroicon-o-check-badge';
-
-    public static function getNavigationBadge(): ?string
-    {
-        // return 'NEW';
-        return static::getModel()::count();
-    }
-
-    public static function getGloballySearchableAttributes(): array
-    {
-        return ['name', 'slug', 'description'];
-    }
-
-    public static function getGlobalSearchResultDetails(Model $record): array
-    {
-        return [
-            'Brand' => $record->brand->name,
-            //'Description' => $record->description,
-        ];
-    }
-
-    public static function getGlobalSearchEloquentQuery(): Builder
-    {
-        return parent::getGlobalSearchEloquentQuery()->with(['brand']);
-    }
-
-    public static function form(Form $form): Form
+    public function form(Form $form): Form
     {
         return $form
             ->schema([
-                Forms\Components\Group::make()
-                    ->schema([
-                        Forms\Components\Section::make()
+                Forms\Components\Tabs::make('Products')
+                    ->tabs([
+                        Forms\Components\Tabs\Tab::make('Information')
                             ->schema([
                                 Forms\Components\TextInput::make('name')
                                     ->required()
@@ -85,9 +44,9 @@ class ProductResource extends Resource
 
                                 Forms\Components\MarkdownEditor::make('description')
                                     ->columnSpan('full'),
-                            ])->columns(2),
+                            ])->columns(),
 
-                        Forms\Components\Section::make('Pricing & Inventory')
+                        Forms\Components\Tabs\Tab::make('Pricing & Inventory')
                             ->schema([
                                 Forms\Components\TextInput::make('sku')
                                     ->label("SKU (Stock Keeping Unit)")
@@ -111,13 +70,9 @@ class ProductResource extends Resource
                                         'deliverable' => ProductTypeEnum::DELIVERABLE->value,
                                     ])->required()
                                     ->native(false),
+                            ])->columns(2),
 
-                            ])->columns(2)
-                    ]),
-
-                Forms\Components\Group::make()
-                    ->schema([
-                        Forms\Components\Section::make('Status')
+                        Forms\Components\Tabs\Tab::make('Additional Information')
                             ->schema([
                                 Forms\Components\Toggle::make('is_visible')
                                     ->label('Visibility')
@@ -131,23 +86,6 @@ class ProductResource extends Resource
                                 Forms\Components\DatePicker::make('published_at')
                                     ->label('Availability')
                                     ->default(now()),
-                            ]),
-
-                        Forms\Components\Section::make('Image')
-                            ->schema([
-                                Forms\Components\FileUpload::make('image')
-                                    ->directory('form-attachments')
-                                    ->preserveFilenames()
-                                    ->image()
-                                    ->imageEditor(),
-                            ])->collapsible(),
-
-                        Forms\Components\Section::make('Associations')
-                            ->schema([
-                                Forms\Components\Select::make('brand_id')
-                                    ->relationship('brand', 'name')
-                                    ->required()
-                                    ->native(false),
 
                                 Forms\Components\Select::make('categories')
                                     ->relationship('categories', 'name')
@@ -155,14 +93,22 @@ class ProductResource extends Resource
                                     ->required()
                                     ->native(false),
 
-                            ]),
-                    ]),
+                                Forms\Components\FileUpload::make('image')
+                                    ->directory('form-attachments')
+                                    ->preserveFilenames()
+                                    ->image()
+                                    ->imageEditor()
+                                    ->columnSpanFull(),
+
+                            ])->columns(2),
+                    ])->columnSpanFull(),
             ]);
     }
 
-    public static function table(Table $table): Table
+    public function table(Table $table): Table
     {
         return $table
+            ->recordTitleAttribute('name')
             ->columns([
                 Tables\Columns\ImageColumn::make('image'),
 
@@ -196,20 +142,13 @@ class ProductResource extends Resource
                 Tables\Columns\TextColumn::make('type'),
             ])
             ->filters([
-                Tables\Filters\TernaryFilter::make('is_visible')
-                    ->label('Visibility')
-                    ->boolean()
-                    ->trueLabel('Only Visible Products')
-                    ->falseLabel('Only Hidden Products')
-                    ->native(false),
-
-                Tables\Filters\SelectFilter::make('brand')
-                    ->relationship('brand', 'name')
-                    ->native(false),
+                //
+            ])
+            ->headerActions([
+                Tables\Actions\CreateAction::make(),
             ])
             ->actions([
                 Tables\Actions\ActionGroup::make([
-                    Tables\Actions\ViewAction::make(),
                     Tables\Actions\EditAction::make(),
                     Tables\Actions\DeleteAction::make(),
                 ]),
@@ -222,21 +161,5 @@ class ProductResource extends Resource
             ->emptyStateActions([
                 Tables\Actions\CreateAction::make(),
             ]);
-    }
-
-    public static function getRelations(): array
-    {
-        return [
-            //
-        ];
-    }
-
-    public static function getPages(): array
-    {
-        return [
-            'index' => Pages\ListProducts::route('/'),
-            'create' => Pages\CreateProduct::route('/create'),
-            'edit' => Pages\EditProduct::route('/{record}/edit'),
-        ];
     }
 }
